@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Calculator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f0f13;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 16px;
+  }
+  .calculator {
+    width: 100%;
+    max-width: 400px;
+    background: #1a1a20;
+    border-radius: 28px;
+    padding: 24px 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .display {
+    text-align: right;
+    padding: 20px 8px 28px;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    word-break: break-all;
+  }
+  .expression {
+    font-size: 1.1rem;
+    color: #8a8a93;
+    min-height: 1.6rem;
+  }
+  .result {
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  button {
+    border: none;
+    border-radius: 50%;
+    aspect-ratio: 1;
+    font-size: 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: #fff;
+    background: #2e2e36;
+    transition: transform .08s ease, background .15s ease, filter .15s ease;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  button:active { transform: scale(.92); filter: brightness(1.4); }
+  button.op { background: #3a3a44; color: #ffb340; font-size: 1.7rem; }
+  button.equals { background: #ff9f0a; color: #fff; font-size: 1.8rem; }
+  button.equals:active { filter: brightness(1.15); }
+  button.util { background: #45454e; color: #ff5d5d; }
+  button.zero { grid-column: span 2; border-radius: 999px; aspect-ratio: auto; padding: 0 24px; text-align: left; }
+  @media (max-width: 360px) {
+    .calculator { padding: 18px 14px; border-radius: 22px; }
+    .result { font-size: 2.4rem; }
+    button { font-size: 1.3rem; }
+    .buttons { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display">
+      <div class="expression" id="expression"></div>
+      <div class="result" id="result">0</div>
+    </div>
+    <div class="buttons">
+      <button class="util" data-action="clear">C</button>
+      <button class="util" data-action="back">⌫</button>
+      <button class="util" data-action="percent">%</button>
+      <button class="op" data-action="op" data-value="/">÷</button>
+      <button data-action="num" data-value="7">7</button>
+      <button data-action="num" data-value="8">8</button>
+      <button data-action="num" data-value="9">9</button>
+      <button class="op" data-action="op" data-value="*">×</button>
+      <button data-action="num" data-value="4">4</button>
+      <button data-action="num" data-value="5">5</button>
+      <button data-action="num" data-value="6">6</button>
+      <button class="op" data-action="op" data-value="-">−</button>
+      <button data-action="num" data-value="1">1</button>
+      <button data-action="num" data-value="2">2</button>
+      <button data-action="num" data-value="3">3</button>
+      <button class="op" data-action="op" data-value="+">+</button>
+      <button class="zero" data-action="num" data-value="0">0</button>
+      <button data-action="num" data-value=".">.</button>
+      <button class="equals" data-action="equals">=</button>
+    </div>
+  </div>
+<script>
+  const exprEl = document.getElementById('expression');
+  const resEl = document.getElementById('result');
+  let current = '0', previous = '', operator = null, justEvaluated = false;
+
+  function update() {
+    resEl.textContent = current;
+    exprEl.textContent = previous + (operator ? ' ' + symbol(operator) : '');
+  }
+  function symbol(op) { return {'+':'+','-':'−','*':'×','/':'÷'}[op] || op; }
+
+  function inputNum(v) {
+    if (justEvaluated) { current = '0'; justEvaluated = false; }
+    if (v === '.' && current.includes('.')) return;
+    current = current === '0' && v !== '.' ? v : current + v;
+    update();
+  }
+  function inputOp(op) {
+    if (operator && !justEvaluated) calculate();
+    previous = current; operator = op; justEvaluated = false;
+    current = '0'; update();
+  }
+  function calculate() {
+    if (!operator) return;
+    const a = parseFloat(previous), b = parseFloat(current);
+    let r;
+    switch (operator) {
+      case '+': r = a + b; break;
+      case '-': r = a - b; break;
+      case '*': r = a * b; break;
+      case '/': r = b === 0 ? NaN : a / b; break;
+    }
+    current = Number.isNaN(r) ? 'Error' : String(parseFloat(r.toPrecision(12)));
+    previous = ''; operator = null; justEvaluated = true;
+    update();
+  }
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const a = btn.dataset.action;
+      if (a === 'num') inputNum(btn.dataset.value);
+      else if (a === 'op') inputOp(btn.dataset.value);
+      else if (a === 'equals') calculate();
+      else if (a === 'clear') { current='0'; previous=''; operator=null; justEvaluated=false; update(); }
+      else if (a === 'back') { current = current.length > 1 ? current.slice(0,-1) : '0'; update(); }
+      else if (a === 'percent') { current = String(parseFloat(current)/100); update(); }
+    });
+  });
+  document.addEventListener('keydown', e => {
+    if (/[0-9.]/.test(e.key)) inputNum(e.key);
+    else if (['+','-','*','/'].includes(e.key)) inputOp(e.key);
+    else if (e.key === 'Enter' || e.key === '=') calculate();
+    else if (e.key === 'Backspace') { current = current.length > 1 ? current.slice(0,-1) : '0'; update(); }
+    else if (e.key === 'Escape') { current='0'; previous=''; operator=null; update(); }
+    else if (e.key === '%') { current = String(parseFloat(current)/100); update(); }
+  });
+  update();
+</script>
+</body>
+</html>
